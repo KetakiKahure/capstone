@@ -84,7 +84,7 @@ router.get('/focus-minutes', authenticate, async (req, res) => {
   }
 });
 
-// Get mood vs focus correlation
+// Get mood vs focus correlation with detailed metrics
 router.get('/mood-focus', authenticate, async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 7;
@@ -98,46 +98,112 @@ router.get('/mood-focus', authenticate, async (req, res) => {
       days: days
     });
 
-    // Check what mood logs exist (for debugging)
-    const moodCheck = await pool.query(
-      `SELECT 
-        id, 
-        mood, 
-        created_at,
-        DATE(created_at) as mood_date_local
-       FROM mood_logs 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC 
-       LIMIT 10`,
-      [req.userId]
-    );
-    console.log(`😊 Recent moods for user ${req.userId}:`, moodCheck.rows.map(m => ({
-      mood: m.mood,
-      mood_date_local: m.mood_date_local,
-      created_at: m.created_at
-    })));
-
-    const result = await pool.query(
+    // Get aggregated mood-focus data
+    const aggregatedResult = await pool.query(
       `SELECT 
         ml.mood,
-        COALESCE(AVG(ts.duration / 60.0), 0) as focus_minutes
+        COALESCE(AVG(ts.duration / 60.0), 0) as avg_focus_minutes,
+        COALESCE(MAX(ts.duration / 60.0), 0) as max_focus_minutes,
+        COALESCE(MIN(ts.duration / 60.0), 0) as min_focus_minutes,
+        COUNT(DISTINCT DATE(ml.created_at)) as mood_days,
+        COUNT(DISTINCT ts.id) as focus_sessions,
+        COALESCE(SUM(ts.duration / 60.0), 0) as total_focus_minutes
        FROM mood_logs ml
        LEFT JOIN timer_sessions ts ON DATE(ml.created_at) = DATE(ts.completed_at) 
          AND ts.user_id = ml.user_id 
          AND ts.session_type = 'work'
        WHERE ml.user_id = $1 AND ml.created_at >= $2
        GROUP BY ml.mood
-       ORDER BY ml.mood`,
+       ORDER BY avg_focus_minutes DESC`,
       [req.userId, startDate]
     );
 
-    const data = result.rows.map(row => ({
+    // Get daily breakdown for scatter plot and trend analysis
+    const dailyResult = await pool.query(
+      `SELECT 
+        DATE(ml.created_at) as date,
+        ml.mood,
+        COALESCE(SUM(ts.duration / 60.0), 0) as focus_minutes,
+        COUNT(ts.id) as session_count
+       FROM mood_logs ml
+       LEFT JOIN timer_sessions ts ON DATE(ml.created_at) = DATE(ts.completed_at) 
+         AND ts.user_id = ml.user_id 
+         AND ts.session_type = 'work'
+       WHERE ml.user_id = $1 AND ml.created_at >= $2
+       GROUP BY DATE(ml.created_at), ml.mood
+       ORDER BY date DESC, ml.mood`,
+      [req.userId, startDate]
+    );
+
+    // Calculate correlation statistics
+    const aggregatedData = aggregatedResult.rows.map(row => ({
       mood: row.mood,
-      focusMinutes: Math.round(parseFloat(row.focus_minutes) || 0)
+      avgFocusMinutes: Math.round(parseFloat(row.avg_focus_minutes) * 10) / 10,
+      maxFocusMinutes: Math.round(parseFloat(row.max_focus_minutes)),
+      minFocusMinutes: Math.round(parseFloat(row.min_focus_minutes)),
+      moodDays: parseInt(row.mood_days),
+      focusSessions: parseInt(row.focus_sessions),
+      totalFocusMinutes: Math.round(parseFloat(row.total_focus_minutes)),
     }));
 
-    console.log(`📊 Mood-focus result for user ${req.userId}:`, data);
-    res.json(data);
+    const dailyData = dailyResult.rows.map(row => ({
+      date: row.date.toISOString().split('T')[0],
+      mood: row.mood,
+      focusMinutes: Math.round(parseFloat(row.focus_minutes) * 10) / 10,
+      sessionCount: parseInt(row.session_count),
+    }));
+
+    // Calculate insights
+    let insights = {
+      bestMoodForFocus: null,
+      worstMoodForFocus: null,
+      totalDataPoints: aggregatedData.length,
+      totalDays: days,
+      averageFocusOverall: 0,
+      strongestCorrelation: null,
+    };
+
+    if (aggregatedData.length > 0) {
+      // Sort by average focus
+      const sorted = [...aggregatedData].sort((a, b) => b.avgFocusMinutes - a.avgFocusMinutes);
+      insights.bestMoodForFocus = sorted[0];
+      insights.worstMoodForFocus = sorted[sorted.length - 1];
+      
+      // Calculate overall average
+      const totalFocus = aggregatedData.reduce((sum, m) => sum + m.totalFocusMinutes, 0);
+      const totalSessions = aggregatedData.reduce((sum, m) => sum + m.focusSessions, 0);
+      insights.averageFocusOverall = totalSessions > 0 ? Math.round((totalFocus / totalSessions) * 10) / 10 : 0;
+
+      // Find mood with most consistent focus (lowest variance)
+      if (aggregatedData.length > 1) {
+        const withVariance = aggregatedData.map(m => ({
+          ...m,
+          variance: m.maxFocusMinutes - m.minFocusMinutes,
+        }));
+        insights.strongestCorrelation = withVariance.reduce((prev, curr) => 
+          curr.variance < prev.variance ? curr : prev
+        );
+      }
+    }
+
+    const response = {
+      aggregated: aggregatedData,
+      daily: dailyData,
+      insights: insights,
+      timeRange: {
+        days: days,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+      },
+    };
+
+    console.log(`📊 Mood-focus result for user ${req.userId}:`, {
+      moods: aggregatedData.length,
+      dailyPoints: dailyData.length,
+      bestMood: insights.bestMoodForFocus?.mood,
+    });
+
+    res.json(response);
   } catch (error) {
     console.error('Get mood focus error:', error);
     res.status(500).json({ message: 'Server error' });

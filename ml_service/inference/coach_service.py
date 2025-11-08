@@ -19,9 +19,13 @@ except ImportError:
 # Try importing Gemini
 try:
     import google.generativeai as genai
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
+    genai = None
+    HarmCategory = None
+    HarmBlockThreshold = None
     logger.warning("Google Generative AI library not available")
 
 class CoachService:
@@ -60,7 +64,7 @@ class CoachService:
                     genai.configure(api_key=gemini_key)
                     # Try the configured model, with fallback to common models
                     model_name = settings.GEMINI_MODEL
-                    models_to_try = [model_name, "gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"]
+                    models_to_try = [model_name, "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest", "gemini-pro-latest"]
                     
                     for model in models_to_try:
                         try:
@@ -187,35 +191,160 @@ class CoachService:
                 "max_output_tokens": 200,
             }
             
+            # Safety settings - allow productivity and wellness content
+            # Use more permissive settings to avoid false positives
+            safety_settings = None
+            if GEMINI_AVAILABLE and HarmCategory and HarmBlockThreshold:
+                try:
+                    # More permissive settings for wellness content - only block high-risk content
+                    safety_settings = [
+                        {
+                            "category": HarmCategory.HARM_CATEGORY_HARASSMENT,
+                            "threshold": HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                        },
+                        {
+                            "category": HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                            "threshold": HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                        },
+                        {
+                            "category": HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                            "threshold": HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                        },
+                        {
+                            "category": HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                            "threshold": HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                        },
+                    ]
+                except Exception as safety_err:
+                    logger.debug(f"Could not set safety settings: {safety_err}, using defaults")
+                    safety_settings = None
+            
             # Try to generate content - handle different model API versions
             try:
-                response = self.gemini_client.generate_content(
-                    full_prompt,
-                    generation_config=generation_config
-                )
-                message = response.text.strip()
+                # Build API call with optional safety_settings
+                if safety_settings:
+                    response = self.gemini_client.generate_content(
+                        full_prompt,
+                        generation_config=generation_config,
+                        safety_settings=safety_settings
+                    )
+                else:
+                    response = self.gemini_client.generate_content(
+                        full_prompt,
+                        generation_config=generation_config
+                    )
+                
+                # Check if response was blocked by safety filters
+                # finish_reason 2 = SAFETY (blocked by safety filters)
+                if response.candidates and len(response.candidates) > 0:
+                    candidate = response.candidates[0]
+                    finish_reason = getattr(candidate, 'finish_reason', None)
+                    
+                    # Check if blocked (finish_reason can be enum or int)
+                    is_blocked = False
+                    if finish_reason is not None:
+                        # Handle both enum and integer values
+                        if hasattr(finish_reason, '__int__'):
+                            is_blocked = int(finish_reason) == 2
+                        else:
+                            is_blocked = finish_reason == 2
+                        
+                        # Also check enum name if available
+                        if not is_blocked and hasattr(finish_reason, 'name'):
+                            is_blocked = finish_reason.name == 'SAFETY'
+                    
+                    if is_blocked:
+                        logger.warning("Gemini response blocked by safety filters (finish_reason=SAFETY), using rule-based fallback")
+                        raise ValueError("Response blocked by safety filters")
+                
+                # Safely extract text
+                try:
+                    message = response.text.strip()
+                except ValueError as text_error:
+                    # If text extraction fails, try alternative methods
+                    if response.candidates and len(response.candidates) > 0:
+                        candidate = response.candidates[0]
+                        if candidate.content and candidate.content.parts:
+                            message = "".join(part.text for part in candidate.content.parts if hasattr(part, 'text'))
+                            if not message:
+                                logger.warning(f"Could not extract text from Gemini response: {text_error}")
+                                raise text_error
+                        else:
+                            logger.warning(f"Gemini response has no content: {text_error}")
+                            raise text_error
+                    else:
+                        logger.warning(f"Gemini response has no candidates: {text_error}")
+                        raise text_error
+                        
+            except ValueError as safety_error:
+                # Safety filter or text extraction error - use rule-based fallback
+                logger.warning(f"Gemini safety/text error: {safety_error}, using rule-based fallback")
+                raise safety_error
             except Exception as api_error:
-                # If model name is wrong, try to list available models and use the first one
+                # If model name is wrong or other API error, try alternative models
                 logger.warning(f"Model API error: {api_error}. Trying alternative approach...")
                 # Re-initialize with correct model name
                 import google.generativeai as genai
                 model_name = settings.GEMINI_MODEL
                 # Try common model names if the configured one doesn't work
-                for alt_model in ["gemini-1.5-flash", "gemini-pro", "gemini-1.5-pro"]:
+                for alt_model in ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-latest"]:
                     try:
                         temp_client = genai.GenerativeModel(alt_model)
-                        response = temp_client.generate_content(
-                            full_prompt,
-                            generation_config=generation_config
-                        )
-                        message = response.text.strip()
+                        if safety_settings:
+                            response = temp_client.generate_content(
+                                full_prompt,
+                                generation_config=generation_config,
+                                safety_settings=safety_settings
+                            )
+                        else:
+                            response = temp_client.generate_content(
+                                full_prompt,
+                                generation_config=generation_config
+                            )
+                        
+                        # Check safety filters for alternative model too
+                        if response.candidates and len(response.candidates) > 0:
+                            candidate = response.candidates[0]
+                            finish_reason = getattr(candidate, 'finish_reason', None)
+                            
+                            is_blocked = False
+                            if finish_reason is not None:
+                                if hasattr(finish_reason, '__int__'):
+                                    is_blocked = int(finish_reason) == 2
+                                else:
+                                    is_blocked = finish_reason == 2
+                                if not is_blocked and hasattr(finish_reason, 'name'):
+                                    is_blocked = finish_reason.name == 'SAFETY'
+                            
+                            if is_blocked:
+                                logger.warning(f"Alternative model {alt_model} also blocked by safety filters")
+                                continue
+                        
+                        # Extract text safely
+                        try:
+                            message = response.text.strip()
+                        except ValueError:
+                            # Try alternative extraction
+                            if response.candidates and len(response.candidates) > 0:
+                                candidate = response.candidates[0]
+                                if candidate.content and candidate.content.parts:
+                                    message = "".join(part.text for part in candidate.content.parts if hasattr(part, 'text'))
+                                    if not message:
+                                        continue
+                                else:
+                                    continue
+                            else:
+                                continue
+                        
                         logger.info(f"✅ Using alternative model: {alt_model}")
                         # Update the client for future use
                         self.gemini_client = temp_client
                         break
-                    except:
+                    except Exception as alt_error:
+                        logger.debug(f"Alternative model {alt_model} failed: {alt_error}")
                         continue
                 else:
+                    # All models failed - raise original error to trigger fallback
                     raise api_error
             
             # Extract suggested action (simple heuristic)
@@ -223,10 +352,16 @@ class CoachService:
             
             return message, action
             
-        except Exception as e:
-            logger.error(f"Gemini coaching error: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
+        except (ValueError, Exception) as e:
+            # Handle both safety filter errors and other API errors
+            error_msg = str(e)
+            if "safety" in error_msg.lower() or "finish_reason" in error_msg.lower() or "blocked" in error_msg.lower():
+                logger.warning(f"Gemini response blocked or safety filter triggered: {error_msg}")
+            else:
+                logger.error(f"Gemini coaching error: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+            # Fall back to rule-based coaching
             return self._rule_based_coach(features, mood_text, user_message)
     
     def _openai_coach(self, features: Dict, mood_text: str, user_message: str = None) -> tuple:

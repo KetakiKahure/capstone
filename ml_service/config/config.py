@@ -45,10 +45,10 @@ class Settings(BaseSettings):
     
     # Gemini API (for AI Coach) - alternative to OpenAI
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY") or None
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")  # Updated to current model name
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")  # Updated to current model name
     
     # LLM Provider preference (openai, gemini, or auto - uses Gemini if available, else OpenAI)
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "auto")
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")  # Default to Gemini
     
     # Hugging Face
     HF_MODEL_NAME: str = os.getenv("HF_MODEL_NAME", "distilbert-base-uncased-finetuned-sst-2-english")

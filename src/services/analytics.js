@@ -35,24 +35,81 @@ export const getFocusMinutesPerDay = async (days = 7) => {
 export const getMoodVsFocusCorrelation = async (days = 7) => {
   if (USE_MOCK) {
     await delay(API_DELAY)
-    const data = []
     const moods = ['happy', 'calm', 'focused', 'tired', 'anxious']
+    const aggregated = moods.map(mood => ({
+      mood,
+      avgFocusMinutes: Math.floor(Math.random() * 120) + 30,
+      maxFocusMinutes: Math.floor(Math.random() * 150) + 60,
+      minFocusMinutes: Math.floor(Math.random() * 60) + 10,
+      moodDays: Math.floor(Math.random() * 5) + 1,
+      focusSessions: Math.floor(Math.random() * 10) + 1,
+      totalFocusMinutes: Math.floor(Math.random() * 500) + 100,
+    }))
+    
+    const daily = []
     for (let i = 0; i < days; i++) {
       const mood = moods[Math.floor(Math.random() * moods.length)]
-      const focusMinutes = Math.floor(Math.random() * 120) + 30
-      data.push({
+      daily.push({
+        date: new Date(Date.now() - (days - i - 1) * 86400000).toISOString().split('T')[0],
         mood,
-        focusMinutes,
-        date: new Date(Date.now() - (days - i - 1) * 86400000).toISOString(),
+        focusMinutes: Math.floor(Math.random() * 120) + 30,
+        sessionCount: Math.floor(Math.random() * 5) + 1,
       })
     }
-    return data
+    
+    return {
+      aggregated,
+      daily,
+      insights: {
+        bestMoodForFocus: aggregated[0],
+        worstMoodForFocus: aggregated[aggregated.length - 1],
+        totalDataPoints: aggregated.length,
+        totalDays: days,
+        averageFocusOverall: 75,
+      },
+      timeRange: { days, startDate: '', endDate: '' },
+    }
   }
 
   try {
     const response = await apiRequest(`/analytics/mood-focus?days=${days}`)
-    console.log('📊 Mood-focus response:', response?.length || 0, 'moods')
-    return Array.isArray(response) ? response : []
+    console.log('📊 Mood-focus response:', {
+      aggregated: response?.aggregated?.length || 0,
+      daily: response?.daily?.length || 0,
+      insights: response?.insights,
+    })
+    
+    // Handle both old format (array) and new format (object)
+    if (Array.isArray(response)) {
+      // Legacy format - convert to new format
+      return {
+        aggregated: response.map(item => ({
+          mood: item.mood,
+          avgFocusMinutes: item.focusMinutes || 0,
+          maxFocusMinutes: item.focusMinutes || 0,
+          minFocusMinutes: item.focusMinutes || 0,
+          moodDays: 1,
+          focusSessions: 1,
+          totalFocusMinutes: item.focusMinutes || 0,
+        })),
+        daily: [],
+        insights: {
+          bestMoodForFocus: response[0] || null,
+          worstMoodForFocus: response[response.length - 1] || null,
+          totalDataPoints: response.length,
+          totalDays: days,
+          averageFocusOverall: 0,
+        },
+        timeRange: { days, startDate: '', endDate: '' },
+      }
+    }
+    
+    return response || {
+      aggregated: [],
+      daily: [],
+      insights: {},
+      timeRange: { days, startDate: '', endDate: '' },
+    }
   } catch (error) {
     console.error('❌ Error fetching mood-focus correlation:', error)
     throw error // Re-throw to let hook handle it

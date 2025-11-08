@@ -4,13 +4,16 @@ import * as analyticsService from '../services/analytics'
 export const useAnalyticsStore = () => {
   const [focusData, setFocusData] = useState([])
   const [moodData, setMoodData] = useState([])
+  const [moodInsights, setMoodInsights] = useState(null)
+  const [moodDailyData, setMoodDailyData] = useState([])
   const [taskData, setTaskData] = useState([])
   const [loading, setLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState(7) // Default to 7 days
 
-  const fetchData = async () => {
+  const fetchData = async (days = timeRange) => {
     setLoading(true)
     try {
-      console.log('📊 Fetching analytics data...')
+      console.log('📊 Fetching analytics data...', { days })
       console.log('📊 API Base URL:', import.meta.env.VITE_API_URL || 'http://localhost:5000/api')
       
       // Get today's date for comparison
@@ -19,10 +22,15 @@ export const useAnalyticsStore = () => {
       
       // Fetch all data in parallel for faster loading
       const [focusResult, moodResult, tasksResult] = await Promise.allSettled([
-        analyticsService.getFocusMinutesPerDay(7),
-        analyticsService.getMoodVsFocusCorrelation(7),
-        analyticsService.getTaskThroughput(7),
+        analyticsService.getFocusMinutesPerDay(days),
+        analyticsService.getMoodVsFocusCorrelation(days),
+        analyticsService.getTaskThroughput(days),
       ])
+      
+      // Update time range state
+      if (days !== timeRange) {
+        setTimeRange(days)
+      }
       
       console.log('📊 API Results:', {
         focus: focusResult.status,
@@ -89,26 +97,54 @@ export const useAnalyticsStore = () => {
         console.error('Task data error:', tasksResult.reason)
       }
 
-      // Handle mood data
+      // Handle mood data - new format with aggregated, daily, and insights
       let formattedMood = []
-      if (moodResult.status === 'fulfilled' && Array.isArray(moodResult.value)) {
-        formattedMood = moodResult.value
-          .filter(item => item && item.mood)
-          .map((item) => ({
-            mood: item.mood.charAt(0).toUpperCase() + item.mood.slice(1),
-            focusMinutes: Math.round(parseFloat(item.focusMinutes) || 0),
-          }))
+      let insights = null
+      let dailyData = []
+      
+      if (moodResult.status === 'fulfilled') {
+        const moodResponse = moodResult.value
+        
+        // Handle new format (object with aggregated, daily, insights)
+        if (moodResponse && moodResponse.aggregated) {
+          formattedMood = moodResponse.aggregated
+            .filter(item => item && item.mood)
+            .map((item) => ({
+              mood: item.mood.charAt(0).toUpperCase() + item.mood.slice(1),
+              avgFocusMinutes: item.avgFocusMinutes || 0,
+              maxFocusMinutes: item.maxFocusMinutes || 0,
+              minFocusMinutes: item.minFocusMinutes || 0,
+              moodDays: item.moodDays || 0,
+              focusSessions: item.focusSessions || 0,
+              totalFocusMinutes: item.totalFocusMinutes || 0,
+              // Legacy compatibility
+              focusMinutes: item.avgFocusMinutes || 0,
+            }))
+          
+          insights = moodResponse.insights || null
+          dailyData = moodResponse.daily || []
+        }
+        // Handle legacy format (array)
+        else if (Array.isArray(moodResponse)) {
+          formattedMood = moodResponse
+            .filter(item => item && item.mood)
+            .map((item) => ({
+              mood: item.mood.charAt(0).toUpperCase() + item.mood.slice(1),
+              focusMinutes: Math.round(parseFloat(item.focusMinutes) || 0),
+              avgFocusMinutes: Math.round(parseFloat(item.focusMinutes) || 0),
+            }))
+        }
       } else {
         console.error('Mood data error:', moodResult.reason)
       }
       
       if (formattedMood.length === 0) {
-        formattedMood = [{ mood: 'No mood data yet', focusMinutes: 0 }]
+        formattedMood = [{ mood: 'No mood data yet', focusMinutes: 0, avgFocusMinutes: 0 }]
       }
 
-      // Generate last 7 days including today - always ensure we have 7 days
-      const last7Days = []
-      for (let i = 6; i >= 0; i--) {
+      // Generate date range based on selected days
+      const dateRange = []
+      for (let i = days - 1; i >= 0; i--) {
         const date = new Date(today)
         date.setDate(date.getDate() - i)
         date.setHours(0, 0, 0, 0)
@@ -116,7 +152,7 @@ export const useAnalyticsStore = () => {
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         const isToday = date.getTime() === today.getTime()
         
-        last7Days.push({
+        dateRange.push({
           date: dateStr,
           dateKey: dateKey,
           dateObj: date,
@@ -125,7 +161,7 @@ export const useAnalyticsStore = () => {
       }
 
       // Build final data arrays - merge real data with generated dates
-      const finalFocusData = last7Days.map(day => {
+      const finalFocusData = dateRange.map(day => {
         const realData = focusMap.get(day.dateKey)
         if (realData) {
           return {
@@ -141,7 +177,7 @@ export const useAnalyticsStore = () => {
         }
       })
 
-      const finalTaskData = last7Days.map(day => {
+      const finalTaskData = dateRange.map(day => {
         const realData = taskMap.get(day.dateKey)
         if (realData) {
           return {
@@ -169,6 +205,8 @@ export const useAnalyticsStore = () => {
 
       setFocusData(finalFocusData)
       setMoodData(formattedMood)
+      setMoodInsights(insights)
+      setMoodDailyData(dailyData)
       setTaskData(finalTaskData)
     } catch (error) {
       console.error('❌ Failed to fetch analytics:', error)
@@ -176,7 +214,7 @@ export const useAnalyticsStore = () => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const emptyDays = []
-      for (let i = 6; i >= 0; i--) {
+      for (let i = days - 1; i >= 0; i--) {
         const date = new Date(today)
         date.setDate(date.getDate() - i)
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -191,22 +229,28 @@ export const useAnalyticsStore = () => {
       }
       setFocusData(emptyDays.map(d => ({ date: d.date, minutes: 0, isToday: d.isToday })))
       setTaskData(emptyDays.map(d => ({ date: d.date, created: 0, completed: 0, isToday: d.isToday })))
-      setMoodData([{ mood: 'No data available', focusMinutes: 0 }])
+      setMoodData([{ mood: 'No data available', focusMinutes: 0, avgFocusMinutes: 0 }])
+      setMoodInsights(null)
+      setMoodDailyData([])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchData()
+    fetchData(timeRange)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run on mount
+  }, [timeRange]) // Re-fetch when time range changes
 
   return {
     focusData,
     moodData,
+    moodInsights,
+    moodDailyData,
     taskData,
     loading,
+    timeRange,
+    setTimeRange,
     fetchData,
   }
 }
