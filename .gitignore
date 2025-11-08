@@ -93,6 +93,8 @@ dmypy.json
 # React
 .cache/
 .parcel-cache/
+.vite/
+.vite/
 
 # Misc
 *.orig
