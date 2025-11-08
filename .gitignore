@@ -94,7 +94,6 @@ dmypy.json
 .cache/
 .parcel-cache/
 .vite/
-.vite/
 
 # Misc
 *.orig
