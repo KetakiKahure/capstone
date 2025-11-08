@@ -8,7 +8,7 @@ const StreakCard = () => {
   const streak = useGamificationStore((state) => state.streak)
 
   return (
-    <Card variant="gradient" className="p-6 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-900/30 dark:via-orange-900/30 dark:to-red-900/30 border-amber-200 dark:border-amber-800/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+    <Card variant="gradient" className="p-6 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 dark:from-amber-900/30 dark:to-red-900/30 border-amber-200 dark:border-amber-800/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-xl">
           <Flame className="w-6 h-6 text-amber-600 dark:text-amber-400 animate-pulse" />

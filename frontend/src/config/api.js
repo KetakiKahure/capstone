@@ -1,5 +1,10 @@
 // API configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// In production, this should be set via environment variable VITE_API_URL
+// For local development, defaults to localhost:5000/api
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.MODE === 'production' 
+    ? 'https://your-backend-url.com/api'  // Update this with your production backend URL
+    : 'http://localhost:5000/api');
 
 // Helper function to get auth token
 export const getAuthToken = () => {

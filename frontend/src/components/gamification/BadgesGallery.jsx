@@ -55,7 +55,7 @@ const BadgesGallery = () => {
                   relative p-6 rounded-2xl text-center transition-all duration-300
                   ${
                     isUnlocked
-                      ? 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-orange-900/30 border-2 border-amber-300 dark:border-amber-700 shadow-elegant hover:shadow-elegant-lg transform hover:scale-110 hover:-translate-y-2'
+                      ? 'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 border-2 border-amber-300 dark:border-amber-700 shadow-elegant hover:shadow-elegant-lg transform hover:scale-110 hover:-translate-y-2'
                       : 'bg-calm-100/60 dark:bg-calm-800/60 backdrop-blur-sm border-2 border-calm-300/50 dark:border-calm-600/50 opacity-70'
                   }
                 `}

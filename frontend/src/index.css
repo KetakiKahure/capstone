@@ -115,34 +115,72 @@
   
   /* Enhanced Card style with gradient borders and shadows */
   .card {
-    @apply bg-white/90 dark:bg-calm-800/90 rounded-3xl shadow-elegant dark:shadow-elegant-lg 
-           border border-calm-200/60 dark:border-calm-700/60 p-6 
+    @apply rounded-3xl shadow-elegant dark:shadow-elegant-lg 
+           border p-6 
            backdrop-blur-xl transition-all duration-300 
            hover:shadow-elegant-lg dark:hover:shadow-elegant-lg
            hover:scale-[1.02] hover:-translate-y-1;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(226, 232, 240, 0.6);
+  }
+  
+  .dark .card {
+    background-color: rgba(30, 41, 59, 0.9);
+    border-color: rgba(51, 65, 85, 0.6);
   }
   
   .card-gradient {
-    @apply card bg-gradient-to-br from-white via-primary-50/50 to-indigo-50/30 
-           dark:from-calm-800 dark:via-primary-900/20 dark:to-indigo-900/20
-           border-primary-200/50 dark:border-primary-800/50;
+    @apply card;
+    border-color: rgba(186, 230, 253, 0.5);
+    background: linear-gradient(to bottom right, 
+      rgb(255 255 255), 
+      rgba(240, 249, 255, 0.5), 
+      rgba(238, 242, 255, 0.3)
+    );
+  }
+  
+  .dark .card-gradient {
+    border-color: rgba(8, 47, 73, 0.5);
+    background: linear-gradient(to bottom right, 
+      rgb(30 41 59), 
+      rgba(8, 47, 73, 0.2), 
+      rgba(30, 27, 75, 0.2)
+    );
   }
   
   .card-glass {
-    @apply bg-white/80 dark:bg-calm-800/80 backdrop-blur-2xl rounded-3xl
-           border border-white/20 dark:border-calm-700/30
-           shadow-elegant-lg;
+    @apply backdrop-blur-2xl rounded-3xl border shadow-elegant-lg;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .card-glass {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(51, 65, 85, 0.3);
   }
   
   /* Enhanced Input style */
   .input {
-    @apply w-full px-5 py-3.5 rounded-2xl border-2 border-calm-300/60 dark:border-calm-600/60 
-           bg-white/80 dark:bg-calm-800/80 backdrop-blur-sm
+    @apply w-full px-5 py-3.5 rounded-2xl border-2 backdrop-blur-sm
            text-calm-900 dark:text-calm-50 
            focus-ring transition-all duration-300
-           focus:border-primary-500 focus:bg-white dark:focus:bg-calm-800
-           focus:shadow-glow focus:scale-[1.02]
+           focus:border-primary-500 focus:shadow-glow focus:scale-[1.02]
            placeholder:text-calm-400 dark:placeholder:text-calm-500;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(203, 213, 225, 0.6);
+  }
+  
+  .input:focus {
+    background-color: rgb(255, 255, 255);
+  }
+  
+  .dark .input {
+    background-color: rgba(30, 41, 59, 0.8);
+    border-color: rgba(71, 85, 105, 0.6);
+  }
+  
+  .dark .input:focus {
+    background-color: rgb(30, 41, 59);
   }
   
   /* Skeleton loader */
@@ -152,7 +190,14 @@
   
   /* Glass morphism effect */
   .glass {
-    @apply bg-white/70 dark:bg-calm-800/70 backdrop-blur-md border border-white/20 dark:border-calm-700/50;
+    @apply backdrop-blur-md border;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .glass {
+    background-color: rgba(30, 41, 59, 0.7);
+    border-color: rgba(51, 65, 85, 0.5);
   }
   
   /* Gradient text - use CSS variables for mood-based colors */
@@ -230,4 +275,3 @@
     @apply border-t border-calm-200 dark:border-calm-700;
   }
 }
-
