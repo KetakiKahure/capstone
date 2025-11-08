@@ -44,7 +44,13 @@ const Header = ({ onMenuClick }) => {
               aria-label="User menu"
               aria-expanded={showUserMenu}
             >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-white shadow-glow">
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-glow"
+                style={{
+                  background: `linear-gradient(to bottom right, var(--color-primary-500), var(--color-accent))`,
+                  boxShadow: `0 0 20px var(--glow-color)`,
+                }}
+              >
                 <User className="w-5 h-5" />
               </div>
               <span className="hidden md:block text-sm font-medium text-calm-700 dark:text-calm-300">

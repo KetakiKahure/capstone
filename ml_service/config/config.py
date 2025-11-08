@@ -14,12 +14,18 @@ try:
     # Try config/.env first, then root .env
     if env_file_config.exists():
         load_dotenv(env_file_config, override=True)
-        print(f"📁 Loaded .env from: {env_file_config}")
+        try:
+            print(f"Loaded .env from: {env_file_config}")
+        except UnicodeEncodeError:
+            print("Loaded .env from config directory")
     elif env_file_root.exists():
         load_dotenv(env_file_root, override=True)
-        print(f"📁 Loaded .env from: {env_file_root}")
+        try:
+            print(f"Loaded .env from: {env_file_root}")
+        except UnicodeEncodeError:
+            print("Loaded .env from root directory")
 except ImportError:
-    print("⚠️  python-dotenv not installed, using environment variables only")
+    print("WARNING: python-dotenv not installed, using environment variables only")
 
 class Settings(BaseSettings):
     # Database

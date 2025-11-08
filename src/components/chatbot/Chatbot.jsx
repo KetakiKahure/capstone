@@ -93,7 +93,13 @@ const Chatbot = () => {
       <div className="relative z-10 flex flex-col h-full min-h-0">
         <div className="p-6 border-b border-calm-200/60 dark:border-calm-700/60 bg-gradient-to-r from-primary-50/50 to-indigo-50/30 dark:from-primary-900/20 dark:to-indigo-900/20">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center shadow-glow">
+            <div 
+              className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-glow"
+              style={{
+                background: `linear-gradient(to bottom right, var(--color-primary-500), var(--color-accent))`,
+                boxShadow: `0 0 20px var(--glow-color)`,
+              }}
+            >
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -123,9 +129,12 @@ const Chatbot = () => {
             <div
               className={`max-w-[80%] rounded-3xl px-5 py-3 shadow-elegant ${
                 message.type === 'user'
-                  ? 'bg-gradient-to-r from-primary-600 to-indigo-600 text-white'
+                  ? 'text-white'
                   : 'bg-white/80 dark:bg-calm-700/80 backdrop-blur-sm text-calm-900 dark:text-calm-50 border border-calm-200/50 dark:border-calm-600/50'
               }`}
+              style={message.type === 'user' ? {
+                background: `linear-gradient(to right, var(--color-primary-600), var(--color-primary-500), var(--color-accent))`,
+              } : {}}
             >
               <p className="text-sm">{message.text}</p>
               <p

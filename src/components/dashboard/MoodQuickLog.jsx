@@ -15,7 +15,9 @@ const moods = [
 ]
 
 const MoodQuickLog = () => {
-  const { addMoodLog, loading } = useMoodStore()
+  // Subscribe to mood store actions - changes will propagate automatically
+  const addMoodLog = useMoodStore((state) => state.addMoodLog)
+  const loading = useMoodStore((state) => state.loading)
   const [selectedMood, setSelectedMood] = useState(null)
   const [note, setNote] = useState('')
   const [showNote, setShowNote] = useState(false)
@@ -38,7 +40,7 @@ const MoodQuickLog = () => {
   }
 
   return (
-    <Card variant="gradient" className="p-8 relative overflow-hidden">
+    <Card variant="gradient" className="p-6 sm:p-8 relative overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="absolute top-0 right-0 w-32 h-32 bg-purple-400/10 dark:bg-purple-600/10 rounded-full blur-2xl -mr-16 -mt-16" />
       <div className="relative z-10">
         <div className="flex items-center gap-3 mb-6">

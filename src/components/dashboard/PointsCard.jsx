@@ -4,15 +4,24 @@ import { useGamificationStore } from '../../store/gamificationStore'
 import Card from '../ui/Card'
 
 const PointsCard = () => {
-  const { points, level, totalPoints } = useGamificationStore()
+  // Subscribe to gamification values - Zustand will automatically re-render when these change
+  const points = useGamificationStore((state) => state.points)
+  const level = useGamificationStore((state) => state.level)
+  const totalPoints = useGamificationStore((state) => state.totalPoints)
   const pointsNeeded = level * 1000
   const progress = (totalPoints % 1000) / 10
 
   return (
-    <Card variant="gradient" className="p-6 bg-gradient-to-br from-primary-50 via-blue-50 to-indigo-50 dark:from-primary-900/30 dark:via-blue-900/30 dark:to-indigo-900/30 border-primary-200 dark:border-primary-800/50">
+    <Card variant="gradient" className="p-6 border-primary-200 dark:border-primary-800/50 hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-primary-100 dark:bg-primary-900/50 rounded-xl">
-          <Star className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+        <div 
+          className="p-2 rounded-xl"
+          style={{ backgroundColor: 'var(--color-primary-100)' }}
+        >
+          <Star 
+            className="w-6 h-6" 
+            style={{ color: 'var(--color-primary-600)' }}
+          />
         </div>
         <div>
           <h3 className="text-lg font-semibold text-calm-900 dark:text-calm-50">
@@ -35,8 +44,11 @@ const PointsCard = () => {
         </div>
         <div className="w-full bg-calm-200 dark:bg-calm-700 rounded-full h-3 overflow-hidden">
           <div
-            className="bg-gradient-to-r from-primary-600 to-primary-400 h-3 rounded-full transition-all duration-500 shadow-lg"
-            style={{ width: `${progress}%` }}
+            className="h-3 rounded-full transition-all duration-500 shadow-lg"
+            style={{ 
+              width: `${progress}%`,
+              background: `linear-gradient(to right, var(--color-primary-600), var(--color-primary-400))`,
+            }}
           />
         </div>
       </div>

@@ -5,9 +5,15 @@ import Skeleton from '../ui/Skeleton'
 import { Lock } from 'lucide-react'
 
 const BadgesGallery = () => {
-  const { badges, unlockedBadges, fetchBadges, initialize } = useGamificationStore()
+  // Subscribe to gamification store values - Zustand will automatically re-render when these change
+  const badges = useGamificationStore((state) => state.badges)
+  const unlockedBadges = useGamificationStore((state) => state.unlockedBadges)
+  const fetchBadges = useGamificationStore((state) => state.fetchBadges)
+  const initialize = useGamificationStore((state) => state.initialize)
+  
   const [loading, setLoading] = useState(true)
 
+  // Only initialize on mount
   useEffect(() => {
     const loadBadges = async () => {
       await initialize()
@@ -15,7 +21,7 @@ const BadgesGallery = () => {
       setLoading(false)
     }
     loadBadges()
-  }, [initialize, fetchBadges])
+  }, []) // Empty dependency array - only run on mount
 
   if (loading) {
     return (

@@ -3,18 +3,90 @@
 @tailwind utilities;
 
 @layer base {
+  /* CSS Variables - Components use default colors, only background gradient changes */
+  :root {
+    /* Primary colors for components - these stay constant (neutral blue) */
+    --color-primary-50: #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-300: #93c5fd;
+    --color-primary-400: #60a5fa;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #2563eb;
+    --color-primary-700: #1d4ed8;
+    --color-primary-800: #1e40af;
+    --color-primary-900: #1e3a8a;
+    --color-accent: #60a5fa;
+    
+    /* Background gradient - ONLY these change based on mood */
+    --gradient-from: #f8fafc; /* Default neutral - light gray-blue */
+    --gradient-via: #f1f5f9; /* Default neutral */
+    --gradient-to: #e2e8f0; /* Default neutral */
+    
+    /* Text color - changes based on mood (darker than background) */
+    --mood-text-color: #1f2937; /* Default neutral - dark gray */
+    
+    /* Glow and shadow - stay constant for components */
+    --glow-color: rgba(59, 130, 246, 0.3);
+    --shadow-color: rgba(59, 130, 246, 0.15);
+    --theme-updated: '0';
+  }
+
   * {
-    @apply border-calm-200;
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
   }
   
   body {
-    @apply bg-gradient-to-br from-calm-50 via-primary-50/30 to-indigo-50/20 text-calm-900 font-sans antialiased;
+    /* Background and text color will be set inline by ThemeProvider - fallback to CSS variables */
+    background: linear-gradient(180deg, var(--gradient-from) 0%, var(--gradient-via) 50%, var(--gradient-to) 100%);
+    color: var(--mood-text-color);
+    @apply font-sans antialiased;
     background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
+    transition: background 1s ease-in-out, color 1s ease-in-out;
+    min-height: 100vh;
   }
   
   body.dark {
-    @apply bg-gradient-to-br from-calm-900 via-calm-800 to-primary-900/20 text-calm-50;
-    background-attachment: fixed;
+    /* Dark mode: Dark overlay on top of mood gradient, lighter text */
+    color: #f1f5f9; /* Light gray for dark mode */
+    min-height: 100vh;
+    /* Background will be set inline by ThemeProvider */
+  }
+  
+  /* Override Tailwind text color classes to use mood color */
+  /* Target all common text color classes, but exclude UI elements */
+  body:not(.dark) [class*="text-calm-900"],
+  body:not(.dark) [class*="text-calm-800"],
+  body:not(.dark) [class*="text-calm-700"],
+  body:not(.dark) [class*="text-gray-900"],
+  body:not(.dark) [class*="text-gray-800"],
+  body:not(.dark) [class*="text-gray-700"],
+  body:not(.dark) [class*="text-slate-900"],
+  body:not(.dark) [class*="text-slate-800"],
+  body:not(.dark) [class*="text-slate-700"] {
+    color: var(--mood-text-color) !important;
+  }
+  
+  /* Lighter text colors get slightly transparent mood color */
+  body:not(.dark) [class*="text-calm-600"],
+  body:not(.dark) [class*="text-calm-500"],
+  body:not(.dark) [class*="text-gray-600"],
+  body:not(.dark) [class*="text-gray-500"] {
+    color: var(--mood-text-color) !important;
+    opacity: 0.75;
+  }
+  
+  /* Ensure headings and paragraphs use mood color */
+  body:not(.dark) h1:not([class*="text-white"]):not([class*="text-primary"]),
+  body:not(.dark) h2:not([class*="text-white"]):not([class*="text-primary"]),
+  body:not(.dark) h3:not([class*="text-white"]):not([class*="text-primary"]),
+  body:not(.dark) h4:not([class*="text-white"]):not([class*="text-primary"]),
+  body:not(.dark) h5:not([class*="text-white"]):not([class*="text-primary"]),
+  body:not(.dark) h6:not([class*="text-white"]):not([class*="text-primary"]),
+  body:not(.dark) p:not([class*="text-white"]):not([class*="text-primary"]) {
+    color: var(--mood-text-color) !important;
   }
   
   /* Reduced motion */
@@ -30,9 +102,10 @@
 }
 
 @layer components {
-  /* Focus styles for accessibility */
+  /* Focus styles for accessibility - use CSS variable for dynamic color */
   .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-calm-800;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-calm-800;
+    --tw-ring-color: var(--color-primary-500);
   }
   
   /* Large button style for ADHD-friendly design */
@@ -82,13 +155,30 @@
     @apply bg-white/70 dark:bg-calm-800/70 backdrop-blur-md border border-white/20 dark:border-calm-700/50;
   }
   
-  /* Gradient text */
+  /* Gradient text - use CSS variables for mood-based colors */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 
-           dark:from-primary-400 dark:via-indigo-400 dark:to-purple-400 
-           bg-clip-text text-transparent font-bold;
+    background: linear-gradient(to right, 
+      var(--color-primary-600), 
+      var(--color-primary-500), 
+      var(--color-primary-400)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: bold;
     background-size: 200% auto;
     animation: gradient 3s linear infinite;
+  }
+  
+  body.dark .gradient-text {
+    background: linear-gradient(to right, 
+      var(--color-primary-400), 
+      var(--color-primary-300), 
+      var(--color-primary-200)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   
   /* Shimmer effect */
@@ -118,11 +208,26 @@
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary-400 dark:bg-primary-600 rounded-full;
+    background-color: var(--color-primary-400);
+    border-radius: 9999px;
+  }
+  
+  body.dark ::-webkit-scrollbar-thumb {
+    background-color: var(--color-primary-600);
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-primary-500 dark:bg-primary-500;
+    background-color: var(--color-primary-500);
+  }
+  
+  /* Badge primary variant */
+  .badge-primary {
+    @apply bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200;
+  }
+  
+  /* Card Footer */
+  .card-footer {
+    @apply border-t border-calm-200 dark:border-calm-700;
   }
 }
 

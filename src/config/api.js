@@ -38,7 +38,7 @@ export const apiRequest = async (endpoint, options = {}) => {
   };
 
   try {
-    console.log(`🌐 API Request: ${config.method} ${endpoint}`, body ? JSON.parse(body) : '');
+    console.log(`🌐 API Request: ${config.method} ${API_BASE_URL}${endpoint}`, body ? JSON.parse(body) : '');
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     
     // Handle non-JSON responses
@@ -63,6 +63,12 @@ export const apiRequest = async (endpoint, options = {}) => {
     console.log(`✅ API Response: ${config.method} ${endpoint}`, data);
     return data;
   } catch (error) {
+    // Enhanced error handling for network/CORS issues
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.error(`❌ Network error for ${endpoint}:`, error.message);
+      console.error(`❌ Check if backend is running on ${API_BASE_URL}`);
+      throw new Error(`Failed to connect to server. Please ensure the backend is running on ${API_BASE_URL.replace('/api', '')}`);
+    }
     console.error(`❌ API request error for ${endpoint}:`, error.message);
     throw error;
   }

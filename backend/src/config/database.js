@@ -5,18 +5,25 @@ dotenv.config();
 
 const { Pool } = pkg;
 
-// Handle empty password string - convert to undefined if empty
-const dbPassword = process.env.DB_PASSWORD && process.env.DB_PASSWORD.trim() !== '' 
-  ? process.env.DB_PASSWORD 
-  : undefined;
+// Handle password - ensure it's a string (empty string for no password, or actual password)
+// For SCRAM authentication, password must be a string (can be empty string for trust auth)
+const dbPassword = process.env.DB_PASSWORD !== undefined 
+  ? String(process.env.DB_PASSWORD) 
+  : '';
 
-const pool = new Pool({
+const poolConfig = {
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 5432,
   database: process.env.DB_NAME || 'focuswave',
   user: process.env.DB_USER || 'postgres',
-  password: dbPassword,
-});
+};
+
+// Only add password if it's provided (non-empty)
+if (dbPassword && dbPassword.trim() !== '') {
+  poolConfig.password = dbPassword.trim();
+}
+
+const pool = new Pool(poolConfig);
 
 // Test connection
 pool.on('connect', () => {

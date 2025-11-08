@@ -38,14 +38,18 @@ export const useMoodStore = create(
       moodLogs: [],
       loading: false,
       error: null,
+      currentMood: 'neutral', // Track current mood for theming
 
       fetchMoodLogs: async () => {
         set({ loading: true, error: null })
         try {
           const logs = await moodService.getMoodLogs()
-          set({ moodLogs: logs, loading: false, error: null })
+          // Only set currentMood if there are logs, otherwise keep as 'neutral' (default)
+          const currentMood = logs && logs.length > 0 ? logs[0].mood : 'neutral'
+          set({ moodLogs: logs, currentMood, loading: false, error: null })
         } catch (error) {
-          set({ loading: false, error: error.message })
+          // On error, keep default neutral theme
+          set({ moodLogs: [], currentMood: 'neutral', loading: false, error: error.message })
         }
       },
 
@@ -55,6 +59,7 @@ export const useMoodStore = create(
           const log = await moodService.createMoodLog({ mood, note })
           set((state) => ({
             moodLogs: [log, ...state.moodLogs],
+            currentMood: mood, // Update current mood when new mood is logged
             loading: false,
             error: null,
           }))

@@ -58,6 +58,7 @@ export const useTaskStore = create(
         set({ loading: true, error: null })
         try {
           const newTask = await taskService.createTask(task)
+          // Update tasks array - Zustand will automatically trigger re-renders in all subscribed components
           set((state) => ({
             tasks: [...state.tasks, newTask],
             loading: false,
@@ -74,6 +75,7 @@ export const useTaskStore = create(
         set({ loading: true, error: null })
         try {
           const updatedTask = await taskService.updateTask(id, updates)
+          // Update tasks array - Zustand will automatically trigger re-renders in all subscribed components
           set((state) => ({
             tasks: state.tasks.map((task) =>
               task.id === id ? updatedTask : task
@@ -92,6 +94,7 @@ export const useTaskStore = create(
         set({ loading: true, error: null })
         try {
           await taskService.deleteTask(id)
+          // Update tasks array - Zustand will automatically trigger re-renders in all subscribed components
           set((state) => ({
             tasks: state.tasks.filter((task) => task.id !== id),
             loading: false,

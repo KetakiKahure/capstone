@@ -8,22 +8,21 @@ import Button from '../components/ui/Button'
 import Textarea from '../components/ui/Textarea'
 
 const PomodoroTimer = () => {
-  const {
-    isRunning,
-    isPaused,
-    timeRemaining,
-    currentSession,
-    workDuration,
-    breakDuration,
-    longBreakDuration,
-    sessionsCompleted,
-    startTimer,
-    pauseTimer,
-    resumeTimer,
-    resetTimer,
-    setSession,
-    fetchMLRecommendations,
-  } = useTimerStore()
+  // Subscribe to timer store values - Zustand will automatically re-render when these change
+  const isRunning = useTimerStore((state) => state.isRunning)
+  const isPaused = useTimerStore((state) => state.isPaused)
+  const timeRemaining = useTimerStore((state) => state.timeRemaining)
+  const currentSession = useTimerStore((state) => state.currentSession)
+  const workDuration = useTimerStore((state) => state.workDuration)
+  const breakDuration = useTimerStore((state) => state.breakDuration)
+  const longBreakDuration = useTimerStore((state) => state.longBreakDuration)
+  const sessionsCompleted = useTimerStore((state) => state.sessionsCompleted)
+  const startTimer = useTimerStore((state) => state.startTimer)
+  const pauseTimer = useTimerStore((state) => state.pauseTimer)
+  const resumeTimer = useTimerStore((state) => state.resumeTimer)
+  const resetTimer = useTimerStore((state) => state.resetTimer)
+  const setSession = useTimerStore((state) => state.setSession)
+  const fetchMLRecommendations = useTimerStore((state) => state.fetchMLRecommendations)
 
   const [notes, setNotes] = useState('')
   const [mlRecommendation, setMlRecommendation] = useState(null)
@@ -121,12 +120,16 @@ const PomodoroTimer = () => {
                     className={`
                       flex items-center gap-2 px-5 py-3 rounded-2xl font-semibold transition-all duration-300
                       ${isActive
-                        ? 'bg-gradient-to-r from-primary-500 to-indigo-600 text-white shadow-glow transform scale-105'
+                        ? 'text-white shadow-glow transform scale-105'
                         : 'bg-white/60 dark:bg-calm-700/60 backdrop-blur-sm text-calm-600 dark:text-calm-400 border-2 border-transparent'
                       }
                       ${isRunning ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white dark:hover:bg-calm-600 hover:border-primary-300 dark:hover:border-primary-700 hover:scale-105'}
                       focus-ring
                     `}
+                    style={isActive ? {
+                      background: `linear-gradient(to right, var(--color-primary-500), var(--color-primary-400), var(--color-accent))`,
+                      boxShadow: `0 0 20px var(--glow-color)`,
+                    } : {}}
                   >
                     <SessionIcon className="w-4 h-4" />
                     {sessionConfig[session].label}
@@ -141,9 +144,9 @@ const PomodoroTimer = () => {
                 <svg className="transform -rotate-90 w-80 h-80 drop-shadow-lg">
                   <defs>
                     <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#0ea5e9" />
-                      <stop offset="50%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
+                      <stop offset="0%" stopColor="var(--color-primary-500)" />
+                      <stop offset="50%" stopColor="var(--color-primary-400)" />
+                      <stop offset="100%" stopColor="var(--color-accent)" />
                     </linearGradient>
                   </defs>
                   <circle
@@ -169,10 +172,25 @@ const PomodoroTimer = () => {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <div className="mb-4 p-4 bg-gradient-to-br from-primary-100 to-indigo-100 dark:from-primary-900/50 dark:to-indigo-900/50 rounded-2xl shadow-elegant">
-                    <Icon className="w-10 h-10 text-primary-600 dark:text-primary-400" />
+                  <div 
+                    className="mb-4 p-4 rounded-2xl shadow-elegant"
+                    style={{
+                      background: `linear-gradient(to bottom right, var(--color-primary-100), var(--color-primary-200))`,
+                    }}
+                  >
+                    <Icon 
+                      className="w-10 h-10" 
+                      style={{ color: 'var(--color-primary-600)' }}
+                    />
                   </div>
-                  <div className="text-7xl font-extrabold bg-gradient-to-r from-primary-600 via-indigo-600 to-purple-600 dark:from-primary-400 dark:via-indigo-400 dark:to-purple-400 bg-clip-text text-transparent mb-3">
+                  <div 
+                    className="text-7xl font-extrabold bg-clip-text text-transparent mb-3 gradient-text"
+                    style={{
+                      background: `linear-gradient(to right, var(--color-primary-600), var(--color-primary-500), var(--color-accent))`,
+                      WebkitBackgroundClip: 'text',
+                      backgroundClip: 'text',
+                    }}
+                  >
                     {formatTime(timeRemaining)}
                   </div>
                   <p className="text-base font-bold text-calm-600 dark:text-calm-400 uppercase tracking-wider">

@@ -19,7 +19,13 @@ const moods = [
 ]
 
 const MoodJournal = () => {
-  const { moodLogs, loading, fetchMoodLogs, addMoodLog, deleteMoodLog } = useMoodStore()
+  // Subscribe to mood store values - Zustand will automatically re-render when these change
+  const moodLogs = useMoodStore((state) => state.moodLogs)
+  const loading = useMoodStore((state) => state.loading)
+  const fetchMoodLogs = useMoodStore((state) => state.fetchMoodLogs)
+  const addMoodLog = useMoodStore((state) => state.addMoodLog)
+  const deleteMoodLog = useMoodStore((state) => state.deleteMoodLog)
+  
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedMood, setSelectedMood] = useState(null)
   const [note, setNote] = useState('')
@@ -27,9 +33,12 @@ const MoodJournal = () => {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
 
+  // Only fetch on initial mount if mood logs are empty
   useEffect(() => {
-    fetchMoodLogs()
-  }, [fetchMoodLogs])
+    if (moodLogs.length === 0 && !loading) {
+      fetchMoodLogs()
+    }
+  }, []) // Empty dependency array - only run on mount
 
   const handleMoodSelect = (mood) => {
     setSelectedMood(mood)

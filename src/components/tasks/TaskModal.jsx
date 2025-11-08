@@ -8,7 +8,10 @@ import Select from '../ui/Select'
 import Button from '../ui/Button'
 
 const TaskModal = ({ isOpen, onClose, task = null }) => {
-  const { addTask, updateTask, loading } = useTaskStore()
+  // Subscribe to store actions directly
+  const addTask = useTaskStore((state) => state.addTask)
+  const updateTask = useTaskStore((state) => state.updateTask)
+  const loading = useTaskStore((state) => state.loading)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -69,6 +72,8 @@ const TaskModal = ({ isOpen, onClose, task = null }) => {
     }
 
     if (result.success) {
+      // Close modal after successful task operation
+      // Store updates will automatically trigger re-renders in all components
       onClose()
     }
   }

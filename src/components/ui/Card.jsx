@@ -42,7 +42,7 @@ export const CardContent = ({ children, className = '' }) => (
 )
 
 export const CardFooter = ({ children, className = '' }) => (
-  <div className={`mt-4 pt-4 border-t border-calm-200 dark:border-calm-700 ${className}`}>
+  <div className={`mt-4 pt-4 card-footer ${className}`}>
     {children}
   </div>
 )

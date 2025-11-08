@@ -52,7 +52,12 @@ const Sidebar = ({ isOpen, onClose }) => {
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-calm-200/60 dark:border-calm-700/60 bg-gradient-to-r from-primary-50/50 to-indigo-50/30 dark:from-primary-900/20 dark:to-indigo-900/20">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-glow">
+              <div 
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-glow"
+                style={{
+                  background: `linear-gradient(to bottom right, var(--color-primary-500), var(--color-accent))`,
+                }}
+              >
                 <span className="text-xl">🌊</span>
               </div>
               <h2 className="text-2xl font-bold gradient-text">
@@ -82,13 +87,17 @@ const Sidebar = ({ isOpen, onClose }) => {
                   className={`
                     flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300
                     ${isActive
-                      ? 'bg-gradient-to-r from-primary-500 to-indigo-600 text-white shadow-glow transform scale-105'
+                      ? 'text-white shadow-glow transform scale-105'
                       : 'text-calm-700 dark:text-calm-300 hover:bg-calm-100/80 dark:hover:bg-calm-700/80 hover:scale-105'
                     }
                     ${largeText ? 'text-lg' : ''}
                     focus-ring
                     group
                   `}
+                  style={isActive ? {
+                    background: `linear-gradient(to right, var(--color-primary-500), var(--color-accent))`,
+                    boxShadow: `0 0 20px var(--glow-color)`,
+                  } : {}}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'group-hover:text-primary-600 dark:group-hover:text-primary-400'} transition-colors`} />

@@ -4,7 +4,7 @@
 
 cd "$(dirname "$0")"
 
-GEMINI_KEY="AIzaSyDUfPQElmw-ourPMbsSmsZAMnvAGznWO6Q"
+GEMINI_KEY="AIzaSyCtAf0gIyGYaKpMCY9SkKo2LqMaz49UQes"
 ENV_FILE="config/.env"
 
 echo "🔑 Adding Gemini API Key to $ENV_FILE..."

@@ -23,7 +23,7 @@ pip install google-generativeai>=0.3.0
 
 # Update config/.env
 ENV_FILE="config/.env"
-GEMINI_KEY="AIzaSyDUfPQElmw-ourPMbsSmsZAMnvAGznWO6Q"
+GEMINI_KEY="AIzaSyCtAf0gIyGYaKpMCY9SkKo2LqMaz49UQes"
 
 echo ""
 echo "🔑 Updating $ENV_FILE with Gemini API key..."

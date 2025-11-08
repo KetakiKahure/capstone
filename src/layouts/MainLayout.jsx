@@ -17,7 +17,8 @@ const MainLayout = () => {
   }, [initPreferences, initGamification])
 
   return (
-    <div className="min-h-screen bg-calm-50 dark:bg-calm-900 relative">
+    <div className="min-h-screen relative">
+      {/* Background is handled by body element, so this should be transparent */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="lg:pl-64 min-h-screen flex flex-col">
         <Header onMenuClick={() => setSidebarOpen(true)} />

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd'
 import { Plus, Filter, CheckCircle2, Circle, Trash2, Edit } from 'lucide-react'
 import { useTaskStore } from '../store/taskStore'
@@ -11,26 +11,40 @@ import Select from '../components/ui/Select'
 import Skeleton from '../components/ui/Skeleton'
 
 const Tasks = () => {
-  const {
-    tasks,
-    loading,
-    filters,
-    fetchTasks,
-    deleteTask,
-    toggleTaskStatus,
-    setFilters,
-    reorderTasks,
-    getFilteredTasks,
-  } = useTaskStore()
+  // Subscribe to store values directly - Zustand will automatically re-render when these change
+  const tasks = useTaskStore((state) => state.tasks)
+  const loading = useTaskStore((state) => state.loading)
+  const filters = useTaskStore((state) => state.filters)
+  const deleteTask = useTaskStore((state) => state.deleteTask)
+  const toggleTaskStatus = useTaskStore((state) => state.toggleTaskStatus)
+  const setFilters = useTaskStore((state) => state.setFilters)
+  const reorderTasks = useTaskStore((state) => state.reorderTasks)
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState(null)
 
+  // Get fetchTasks function from store
+  const fetchTasks = useTaskStore((state) => state.fetchTasks)
+
+  // Fetch tasks on mount
   useEffect(() => {
     fetchTasks()
-  }, [fetchTasks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount - fetchTasks is stable
 
-  const filteredTasks = getFilteredTasks()
+  // Compute filtered tasks directly - this will update when tasks or filters change
+  const filteredTasks = useMemo(() => {
+    const safeTasks = Array.isArray(tasks) ? tasks : []
+    const safeFilters = filters || { tag: 'all', priority: 'all', status: 'all' }
+    
+    return safeTasks.filter((task) => {
+      if (!task) return false
+      if (safeFilters.tag !== 'all' && task.tag !== safeFilters.tag) return false
+      if (safeFilters.priority !== 'all' && task.priority !== safeFilters.priority) return false
+      if (safeFilters.status !== 'all' && task.status !== safeFilters.status) return false
+      return true
+    })
+  }, [tasks, filters])
 
   const handleDragEnd = (result) => {
     if (!result.destination) return
@@ -63,9 +77,13 @@ const Tasks = () => {
     low: 'default',
   }
 
-  if (loading && tasks.length === 0) {
+  // Safety check for tasks and filters
+  const safeTasks = Array.isArray(tasks) ? tasks : []
+  const safeFilters = filters || { tag: 'all', priority: 'all', status: 'all' }
+
+  if (loading && safeTasks.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4">
         <div className="mb-6">
           <Skeleton width="200px" height="32px" />
         </div>
@@ -108,7 +126,7 @@ const Tasks = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Select
             label="Tag"
-            value={filters.tag}
+            value={safeFilters.tag}
             onChange={(e) => setFilters({ tag: e.target.value })}
             options={[
               { value: 'all', label: 'All Tags' },
@@ -121,7 +139,7 @@ const Tasks = () => {
           />
           <Select
             label="Priority"
-            value={filters.priority}
+            value={safeFilters.priority}
             onChange={(e) => setFilters({ priority: e.target.value })}
             options={[
               { value: 'all', label: 'All Priorities' },
@@ -132,7 +150,7 @@ const Tasks = () => {
           />
           <Select
             label="Status"
-            value={filters.status}
+            value={safeFilters.status}
             onChange={(e) => setFilters({ status: e.target.value })}
             options={[
               { value: 'all', label: 'All Status' },
